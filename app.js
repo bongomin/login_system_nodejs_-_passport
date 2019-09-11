@@ -10,20 +10,41 @@ var passport          = require('passport');
 var localStrategy     = require('passport-local').strategy;
 var mongo             = require('mongodb');
 var mongoose          = require('mongoose');
-mongoose.connect('mongdb://localhost/loginsystem');
-var db                = mongoose.connection;
 
 // loading the Routes
 var IndexRouter        = require('./routes/index');
 var userRouter         = require('./routes/users');
+var databaseRouter = require('./config/database');
 
 // initializing the Application
 var app = express();
 
+
+
+// map global promisies / get reed of worning
+mongoose.Promise = global.Promise;
+mongoose.connect(databaseRouter.mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB Connected...'))
+.catch(err => console.log(err));
+
+
 // view Engine Handlebars MiddleWare
 app.set('views', path.join(__dirname,'views'));
-app.engine('handlebars', exphbs({defaultLayoyout :'layout'}));
+app.engine('handlebars', exphbs({
+   extname: 'handlebars',
+   defaultLayout: 'layout',
+   layoutsDir: path.join(__dirname, 'views/layouts'),
+   partialsDir: [
+     //  path to your partials
+     path.join(__dirname, 'views/partials'),
+     ]
+   }));
 app.set('view engine', 'handlebars');
+
+
 
 // bodyParser Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -46,22 +67,22 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 
-// express Validator Middleware
-app.use(expressValidator({
-   errorFormatter : (param,msg,value) => {
-      var namespace = param.split('.'),
-      root          = namespace.shift(),
-      formParam     = root;
-while(namespace.length){
-   formParam += '['+ namespace.shift() + ']';
-}
-return {
-    param :formParam,
-    msg   : msg,
-    value : value
-};
-   }
-}));
+// // express Validator Middleware
+// app.use(expressValidator({
+//    errorFormatter: function(param,msg,value){
+//       var namespace = param.split('.')
+//       , root          = namespace.shift()
+//       , formParam     = root;
+// while(namespace.length){
+//    formParam += '['+ namespace.shift() + ']';
+// }
+// return {
+//     param :formParam,
+//     msg   : msg,
+//     value : value
+// };
+//    }
+// }));
 
 // connect flash middleware
 app.use(flash());
@@ -78,7 +99,7 @@ app.use((req,res,next) => {
 
 // routes
 app.use('/',IndexRouter);
-ap.use('/users',userRouter);
+app.use('/users',userRouter);
 
 
 var PORT = process.env.PORT || 3000 ;
