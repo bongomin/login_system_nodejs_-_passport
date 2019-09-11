@@ -7,3 +7,4 @@ module.exports = {
      res.redirect('/');
    }
  }
+
